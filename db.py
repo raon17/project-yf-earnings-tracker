@@ -70,3 +70,23 @@ def delete_stock(ticker: str):
             cur.execute("DELETE FROM stocks WHERE ticker = %s", (ticker.upper(),))
         conn.commit()
 
+# -- Earnings management functions --
+def upsert_earnings(rows: list[dict]):
+    sql = """
+        INSERT INTO earnings
+            (ticker, fiscal_quarter, report_date, eps_estimate, eps_actual, surprise_pct)
+        VALUES
+            (%(ticker)s, %(fiscal_quarter)s, %(report_date)s,
+             %(eps_estimate)s, %(eps_actual)s, %(surprise_pct)s)
+        ON CONFLICT (ticker, fiscal_quarter) DO UPDATE
+            SET report_date  = EXCLUDED.report_date,
+                eps_estimate = EXCLUDED.eps_estimate,
+                eps_actual   = EXCLUDED.eps_actual,
+                surprise_pct = EXCLUDED.surprise_pct,
+                fetched_at   = NOW()
+    """
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            for row in rows:
+                cur.execute(sql, row)
+        conn.commit()
