@@ -4,7 +4,12 @@ from datetime import date
 
 from db import upsert_earnings, upsert_stock
 
-
+def _quarter_label(dt) -> str:
+    #   Convert a Timestamp to 'Q1 YYYY' format
+    month = dt.month
+    q = (month - 1) // 3 + 1
+    return f"Q{q} {dt.year}"
+ 
 def fetch_ticker(ticker: str):
     #   https://ranaroussi.github.io/yfinance/reference/api/yfinance.Ticker.html
     ticker = ticker.upper()
@@ -35,6 +40,7 @@ def fetch_ticker(ticker: str):
                 "eps_estimate":   None if pd.isna(est)  else float(est),
                 "eps_actual":     None if pd.isna(act)  else float(act),
                 "surprise_pct":   None if pd.isna(surp) else float(surp),
+                "fiscal_quarter": _quarter_label(ts)
             })
 
             upsert_earnings(rows)
